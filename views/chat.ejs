@@ -1,0 +1,725 @@
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room - <%= room %>
+    </title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: #f0f2f5;
+            color: #2c3e50;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2c3e50;
+            padding: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            animation: slideDown 0.5s ease-out;
+            z-index: 1000;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .music-btn {
+            background: #00cc99;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            border: none;
+            color: #fff;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .music-btn:hover {
+            background: #00b386;
+            transform: scale(1.05);
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #fff;
+            margin: 0.5rem;
+            margin-top: 6rem;
+            /* Start 6rem below the fixed header */
+            margin-bottom: 4rem;
+            /* Space for message form at the bottom */
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            height: calc(100vh - 10rem);
+            /* Adjust height to prevent overlap with input field */
+        }
+
+        .message-wrapper {
+            margin-bottom: 0.4rem;
+        }
+
+        .message-username {
+            font-size: 0.8rem;
+            font-weight: 500;
+            opacity: 0.8;
+            margin-bottom: 0.1rem;
+            white-space: nowrap;
+        }
+
+        .message {
+            padding: 0.6rem 1rem;
+            border-radius: 20px;
+            /* Pill-shaped corners */
+            display: block;
+            /* Stack vertically */
+            animation: fadeIn 0.3s ease-in;
+            transition: transform 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            max-width: 70%;
+            /* Upper limit for very long messages */
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        .message:hover {
+            transform: scale(1.02);
+        }
+
+        .sent {
+            background: #00cc99;
+            color: #fff;
+            text-align: right;
+            margin-left: auto;
+            /* Keep right-aligned for sent messages */
+        }
+
+        .received {
+            background: #e9ecef;
+            color: #2c3e50;
+            text-align: left;
+            margin-right: auto;
+            /* Keep left-aligned for received messages */
+        }
+
+        .message-form {
+            padding: 0.8rem;
+            background: #fff;
+            display: flex;
+            gap: 0.5rem;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            /* Fix the message form at the bottom */
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            margin: 0;
+            background: rgba(255, 255, 255, 0.95);
+            /* Slightly transparent for better visibility */
+
+            z-index: 9999;
+            /* Below header but above content */
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 1rem;
+            background: #f9f9f9;
+            color: #2c3e50;
+            transition: all 0.3s ease;
+            max-width: calc(100% - 5rem);
+            /* Adjust to fit send button */
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #00cc99;
+            background: #fff;
+            box-shadow: 0 0 8px rgba(0, 204, 153, 0.3);
+        }
+
+        .send-btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            background: #00cc99;
+            color: #fff;
+            border: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover {
+            background: #00b386;
+            transform: scale(1.05);
+        }
+
+        .music-modal {
+            background: rgba(0, 0, 0, 0.85);
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .modal-content {
+            background: #fff;
+            border-radius: 15px;
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.5s ease-out;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .close-btn {
+            font-size: 1.5rem;
+            color: #e74c3c;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            color: #c0392b;
+            transform: scale(1.1);
+        }
+
+        .search-container {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 1rem;
+            background: #f9f9f9;
+            color: #2c3e50;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #00cc99;
+            background: #fff;
+            box-shadow: 0 0 8px rgba(0, 204, 153, 0.3);
+        }
+
+        .search-btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            background: #3498db;
+            color: #fff;
+            border: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .search-btn:hover {
+            background: #2980b9;
+            transform: scale(1.05);
+        }
+
+        .results {
+            max-height: 220px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: #f9f9f9;
+            border-radius: 10px;
+            box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .song {
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            cursor: pointer;
+            background: #fff;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .song:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .status {
+            color: #7f8c8d;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        audio {
+            width: 100%;
+            margin-bottom: 1rem;
+            border-radius: 25px;
+            background: #fff;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .control-btn {
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            border: none;
+            font-weight: 500;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .play-btn {
+            background: #00cc99;
+        }
+
+        .play-btn:hover {
+            background: #00b386;
+            transform: scale(1.05);
+        }
+
+        .pause-btn {
+            background: #e74c3c;
+        }
+
+        .pause-btn:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+            }
+
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.8rem;
+                z-index: 1000;
+            }
+
+            .header h1 {
+                font-size: 1.2rem;
+                margin: 0;
+            }
+
+            .music-btn {
+                padding: 0.5rem 1rem;
+            }
+
+            .chat-container {
+                margin: 0.5rem;
+                padding: 0.8rem;
+                margin-top: 5rem;
+                /* Maintain 6rem below header in mobile */
+                margin-bottom: 13rem;
+                /* Space for message form at the bottom */
+                height: calc(100vh - 9rem);
+                /* Adjust height to prevent overlap with input field */
+            }
+
+            .message-form {
+                flex-direction: column;
+                padding: 0.8rem;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 116%;
+                margin: 0;
+                background: rgba(255, 255, 255, 0.95);
+                z-index: 900;
+            }
+
+            .message-input,
+            .send-btn {
+                width: 85%;
+                margin: 0.3rem 0;
+                padding: 0.6rem;
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 1rem;
+            }
+
+            .modal-header h2 {
+                font-size: 1.3rem;
+            }
+
+            .search-container {
+                flex-direction: column;
+            }
+
+            .search-input,
+            .search-btn {
+                width: 100%;
+                margin: 0.3rem 0;
+                padding: 0.6rem;
+            }
+
+            .results {
+                max-height: 180px;
+            }
+
+            .control-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .control-btn {
+                width: 100%;
+                padding: 0.6rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>Room: <%= room %> (<span id="userCount">0</span> users)</h1>
+        <button id="musicBtn" class="music-btn"><i class="fas fa-music"></i> Music</button>
+    </div>
+    <div id="messages" class="chat-container"></div>
+    <form id="messageForm" class="message-form">
+        <input id="messageInput" type="text" class="message-input" placeholder="Type a message...">
+        <button type="submit" class="send-btn"><i class="fas fa-paper-plane"></i> Send</button>
+    </form>
+
+    <!-- Music Modal -->
+    <div id="musicModal" class="music-modal hidden fixed inset-0 flex items-center justify-center">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Music Player</h2>
+                <button id="closeModal" class="close-btn">×</button>
+            </div>
+            <div class="search-container">
+                <input id="searchInput" type="text" class="search-input" placeholder="Search for music...">
+                <button id="searchBtn" class="search-btn"><i class="fas fa-search"></i> Search</button>
+            </div>
+            <div id="results" class="results"></div>
+            <div id="status" class="status"></div>
+            <audio id="player" controls></audio>
+            <div class="control-buttons">
+                <button id="togglePlayPauseBtn" class="control-btn play-btn"><i class="fas fa-play"></i> Play</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+
+        const socket = io({
+            path: '/socket.io',
+            transports: ['websocket', 'polling'],
+            reconnectionAttempts: 5
+        });
+        const room = '<%= room %>';
+
+        // Extract username from URL query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentUser = urlParams.get('username') || 'Anonymous';
+
+        socket.emit('join-room', room);
+
+        // Chat functionality
+        socket.on('update-users', (count) => {
+            document.getElementById('userCount').textContent = count;
+        });
+
+        socket.on('load-messages', (messages) => {
+            messages.forEach(addMessage);
+        });
+
+        socket.on('chat-message', addMessage);
+
+        document.getElementById('messageForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const msg = document.getElementById('messageInput').value.trim();
+            if (msg) {
+                socket.emit('chat-message', { user: currentUser, text: msg });
+                document.getElementById('messageInput').value = '';
+            }
+        });
+
+        function addMessage(data) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'message-wrapper';
+            if (data.user !== currentUser) {
+                // For received messages (other users), show username above the message box
+                const username = document.createElement('div');
+                username.className = 'message-username';
+                username.textContent = `${data.user}:`;
+                wrapper.appendChild(username);
+            }
+            const div = document.createElement('div');
+            div.className = 'message';
+            if (data.user === currentUser) {
+                // For self messages, only show text (no username)
+                div.textContent = data.text;
+                div.classList.add('sent');
+            } else {
+                // For received messages, show only text in the box
+                div.textContent = data.text;
+                div.classList.add('received');
+            }
+            wrapper.appendChild(div);
+            // Dynamically adjust width based on message length
+            const textLength = data.text.length;
+            const minWidth = 100; // Minimum width in pixels
+            const maxWidth = 70; // Max width as percentage (matches CSS max-width)
+            const width = Math.min(textLength * 10, window.innerWidth * (maxWidth / 100));
+            div.style.width = `${Math.max(minWidth, width)}px`;
+            document.getElementById('messages').appendChild(wrapper);
+            div.scrollIntoView({ behavior: 'smooth', block: 'end' }); // Smooth scroll to the bottom of the chat container
+        }
+
+        // Music functionality
+        const API = window.location.origin;
+
+        const modal = document.getElementById('musicModal');
+        document.getElementById('musicBtn').addEventListener('click', () => modal.classList.remove('hidden'));
+        document.getElementById('closeModal').addEventListener('click', () => modal.classList.add('hidden'));
+
+        document.getElementById('searchInput').addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') search();
+        });
+
+        document.getElementById('searchBtn').addEventListener('click', search);
+
+        async function search() {
+            const query = document.getElementById('searchInput').value;
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+
+            if (!query) {
+                statusDiv.textContent = "Please enter a search term!";
+                return;
+            }
+
+            try {
+                statusDiv.textContent = "Searching...";
+                resultsDiv.innerHTML = "";
+
+                const response = await fetch(`${API}/search?q=${encodeURIComponent(query)}`);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                const songs = await response.json();
+                console.log('Raw search results:', songs);
+
+                if (!Array.isArray(songs) || songs.length === 0) {
+                    resultsDiv.innerHTML = "<p>No results found</p>";
+                    statusDiv.textContent = "";
+                    return;
+                }
+
+                // Filter songs by duration (1 minute to 10 minutes)
+                const filteredSongs = songs.filter(song => {
+                    const durationInSeconds = song.seconds;
+                    return durationInSeconds >= 60 && durationInSeconds <= 600;
+                });
+                console.log('Filtered songs:', filteredSongs);
+
+                if (filteredSongs.length === 0) {
+                    resultsDiv.innerHTML = "<p>No songs found (all durations outside 1-10 minutes)</p>";
+                    statusDiv.textContent = "";
+                    return;
+                }
+
+                resultsDiv.innerHTML = filteredSongs
+                    .map(song => `
+                        <div class="song" onclick="selectSong('${song.videoId}', '${song.title}')">
+                            <strong>${song.title}</strong><br>
+                            Duration: ${song.timestamp}
+                        </div>
+                    `).join('');
+
+                statusDiv.textContent = `Found ${filteredSongs.length} songs`;
+            } catch (error) {
+                console.error('Search error:', error);
+                statusDiv.textContent = `Search failed: ${error.message}`;
+                resultsDiv.innerHTML = "";
+            }
+        }
+
+        function selectSong(videoId, title) {
+            const player = document.getElementById('player');
+            const statusDiv = document.getElementById('status');
+            const results = document.getElementById('results');
+
+            results.classList.add('loading');
+            statusDiv.textContent = `Loading ${title}...`;
+
+            player.pause();
+            player.src = `${API}/play/${videoId}`;
+
+            player.play().then(() => {
+                statusDiv.textContent = `Now playing: ${title}`;
+                results.classList.remove('loading');
+                socket.emit('play-song', { videoId });
+            }).catch(error => {
+                console.error('Play error:', error);
+                statusDiv.textContent = `Failed to play: ${error.message}`;
+                results.classList.remove('loading');
+            });
+
+            player.onerror = () => {
+                statusDiv.textContent = "Error loading audio";
+                results.classList.remove('loading');
+            };
+
+            player.onended = () => {
+                statusDiv.textContent = "Playback ended";
+                results.classList.remove('loading');
+            };
+        }
+
+        const togglePlayPauseBtn = document.getElementById('togglePlayPauseBtn');
+
+        togglePlayPauseBtn.addEventListener('click', () => {
+            if (player.paused) {
+                player.play();
+                togglePlayPauseBtn.classList.remove('play-btn');
+                togglePlayPauseBtn.classList.add('pause-btn');
+                togglePlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+                socket.emit('resume-song');
+            } else {
+                player.pause();
+                togglePlayPauseBtn.classList.remove('pause-btn');
+                togglePlayPauseBtn.classList.add('play-btn');
+                togglePlayPauseBtn.innerHTML = '<i class="fas fa-play"></i> Play';
+                socket.emit('pause-song');
+            }
+        });
+
+        player.onplay = () => {
+            togglePlayPauseBtn.classList.remove('play-btn');
+            togglePlayPauseBtn.classList.add('pause-btn');
+            togglePlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+        };
+
+        player.onpause = () => {
+            togglePlayPauseBtn.classList.remove('pause-btn');
+            togglePlayPauseBtn.classList.add('play-btn');
+            togglePlayPauseBtn.innerHTML = '<i class="fas fa-play"></i> Play';
+        };
+
+        socket.on('play-song', (data) => {
+            const player = document.getElementById('player');
+            const statusDiv = document.getElementById('status');
+            const results = document.getElementById('results');
+
+            results.classList.add('loading');
+            statusDiv.textContent = "Loading audio...";
+
+            player.src = `${API}/play/${data.videoId}`;
+            player.play().then(() => {
+                statusDiv.textContent = `Now playing: ${data.videoId}`;
+                results.classList.remove('loading');
+            }).catch(error => {
+                console.error('Play error:', error);
+                statusDiv.textContent = `Failed to play: ${error.message}`;
+                results.classList.remove('loading');
+            });
+        });
+
+        socket.on('pause-song', () => {
+            const player = document.getElementById('player');
+            player.pause();
+        });
+
+        socket.on('resume-song', () => {
+            const player = document.getElementById('player');
+            player.play();
+        });
+    </script>
+</body>

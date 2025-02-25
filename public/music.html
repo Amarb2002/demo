@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Music Popup</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="p-4 bg-gray-100">
+    <input id="searchInput" type="text" class="w-full p-2 border rounded mb-4" placeholder="Search YouTube...">
+    <div id="results" class="overflow-y-auto max-h-64"></div>
+    <iframe id="youtube-player" width="100%" height="200" frameborder="0" allow="autoplay; encrypted-media"></iframe>
+    <button id="pauseBtn" class="bg-red-500 text-white p-2 rounded mt-2 hover:bg-red-600">Pause</button>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const socket = io(); // Ensure socket is initialized in the popup
+        const apiKey = 'AIzaSyC0_PWLUlKphZ1jZJhSpxp5UFpaoLipsis'; // Replace with your actual key
+
+        // Search YouTube
+        document.getElementById('searchInput').addEventListener('input', async (e) => {
+            const query = e.target.value;
+            if (!query) return;
+
+            try {
+                const response = await axios.get(`https://www.googleapis.com/youtube/v3/search`, {
+                    params: {
+                        part: 'snippet',
+                        q: query,
+                        type: 'video',
+                        key: apiKey,
+                        maxResults: 5
+                    }
+                });
+
+                const results = document.getElementById('results');
+                results.innerHTML = '';
+                response.data.items.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'p-2 bg-white rounded mb-2 cursor-pointer hover:bg-gray-200';
+                    div.textContent = item.snippet.title;
+                    div.onclick = () => playSong(item.id.videoId);
+                    results.appendChild(div);
+                });
+            } catch (error) {
+                console.error('YouTube API Error:', error);
+            }
+        });
+
+        // Play song function
+        function playSong(videoId) {
+            const player = document.getElementById('youtube-player');
+            player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`;
+            socket.emit('play-song', { videoId });
+        }
+
+        // Pause song function
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            socket.emit('pause-song');
+        });
+
+        // Socket.IO listeners
+        socket.on('play-song', (data) => {
+            const player = document.getElementById('youtube-player');
+            if (player) {
+                player.src = `https://www.youtube.com/embed/${data.videoId}?autoplay=1&enablejsapi=1`;
+            }
+        });
+
+        socket.on('pause-song', () => {
+            const player = document.getElementById('youtube-player');
+            if (player) {
+                player.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+            }
+        });
+
+        // Handle seek events
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.event === 'infoDelivery' && event.data.info && event.data.info.currentTime) {
+                socket.emit('seek', { currentTime: event.data.info.currentTime });
+            }
+        });
+
+        socket.on('seek', (data) => {
+            const player = document.getElementById('youtube-player');
+            if (player) {
+                player.contentWindow.postMessage(`{"event":"command","func":"seekTo","args":[${data.currentTime}, true]}`, '*');
+            }
+        });
+
+        // Handle time update events
+        setInterval(() => {
+            const player = document.getElementById('youtube-player');
+            if (player && player.contentWindow) {
+                player.contentWindow.postMessage('{"event":"command","func":"getCurrentTime","args":""}', '*');
+            }
+        }, 1000);
+
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.event === 'infoDelivery' && event.data.info && event.data.info.currentTime) {
+                socket.emit('time-update', { currentTime: event.data.info.currentTime });
+            }
+        });
+
+        socket.on('time-update', (data) => {
+            const player = document.getElementById('youtube-player');
+            if (player) {
+                player.contentWindow.postMessage(`{"event":"command","func":"seekTo","args":[${data.currentTime}, true]}`, '*');
+            }
+        });
+    </script>
+</body>
+
+</html>

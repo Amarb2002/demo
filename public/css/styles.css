@@ -1,0 +1,51 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+#messages {
+    background: #f9fafb;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Message styling */
+.message {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    max-width: 70%;
+    word-wrap: break-word;
+}
+
+.sent {
+    margin-left: auto;
+    background-color: #dcf8c6;
+    /* Light green for sent messages */
+    text-align: right;
+}
+
+.received {
+    margin-right: auto;
+    background-color: #ffffff;
+    /* White for received messages */
+    text-align: left;
+}
+/* Add to styles.css */
+.song {
+    padding: 10px;
+    margin: 5px 0;
+    cursor: pointer;
+    background: #f5f5f5;
+}
+
+.song:hover {
+    background: #e5e5e5;
+}
+
+.loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
