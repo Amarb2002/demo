@@ -79,25 +79,43 @@ app.get('/play/:videoId', async (req, res) => {
     const url = `https://www.youtube.com/watch?v=${videoId}`;
 
     try {
-        const stream = ytdl(url, {
-            filter: 'audioonly',
-            quality: 'lowestaudio',
-            highWaterMark: 1024 * 1024
+        const info = await ytdl.getInfo(url);
+        const audioFormat = ytdl.chooseFormat(info.formats, {
+            quality: 'highestaudio',
+            filter: 'audioonly'
         });
 
-        res.setHeader('Content-Type', 'audio/mp4');
-        res.setHeader('Cache-Control', 'no-cache');
+        if (!audioFormat) {
+            throw new Error('No audio format found');
+        }
 
-        stream.on('info', () => console.log('Stream started:', videoId));
+        const stream = ytdl(url, {
+            format: audioFormat,
+            filter: 'audioonly',
+            highWaterMark: 1 << 25, // 32MB buffer
+            dlChunkSize: 0, // Disable chunk size limits
+        });
+
+        // Set proper headers
+        res.setHeader('Content-Type', 'audio/mp4');
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Content-Disposition', 'inline');
+
+        // Handle errors
         stream.on('error', (error) => {
             console.error('Stream error:', error);
-            if (!res.headersSent) res.status(500).end();
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Streaming failed' });
+            }
         });
 
+        // Pipe the stream
         stream.pipe(res);
+
     } catch (error) {
         console.error('Audio error:', error);
-        res.status(500).json({ error: 'Failed to stream audio' });
+        res.status(500).json({ error: 'Failed to stream audio', details: error.message });
     }
 });
 

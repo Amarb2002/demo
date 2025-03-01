@@ -663,27 +663,47 @@
             results.classList.add('loading');
             statusDiv.textContent = `Loading ${title}...`;
 
+            // Stop current playback
             player.pause();
-            player.src = `${API}/play/${videoId}`;
 
-            player.play().then(() => {
-                statusDiv.textContent = `Now playing: ${title}`;
-                results.classList.remove('loading');
-                socket.emit('play-song', { videoId });
-            }).catch(error => {
-                console.error('Play error:', error);
-                statusDiv.textContent = `Failed to play: ${error.message}`;
-                results.classList.remove('loading');
-            });
+            // Create new audio source
+            const audioUrl = `${API}/play/${videoId}`;
 
-            player.onerror = () => {
-                statusDiv.textContent = "Error loading audio";
+            // Set up error handling before setting source
+            player.onerror = (e) => {
+                console.error('Audio error:', e);
+                statusDiv.textContent = "Error loading audio. Please try another song.";
                 results.classList.remove('loading');
             };
 
-            player.onended = () => {
-                statusDiv.textContent = "Playback ended";
+            // Set up successful load handler
+            player.oncanplay = () => {
+                statusDiv.textContent = `Now playing: ${title}`;
                 results.classList.remove('loading');
+                player.play()
+                    .then(() => {
+                        socket.emit('play-song', { videoId, title });
+                    })
+                    .catch(error => {
+                        console.error('Play error:', error);
+                        statusDiv.textContent = `Playback failed: ${error.message}`;
+                    });
+            };
+
+            // Set source after setting up handlers
+            player.src = audioUrl;
+
+            // Add loading timeout
+            const loadTimeout = setTimeout(() => {
+                if (player.readyState === 0) { // HAVE_NOTHING
+                    statusDiv.textContent = "Loading timeout - please try again";
+                    results.classList.remove('loading');
+                }
+            }, 10000); // 10 second timeout
+
+            // Clear timeout if loaded
+            player.onloadeddata = () => {
+                clearTimeout(loadTimeout);
             };
         }
 
@@ -720,20 +740,16 @@
         socket.on('play-song', (data) => {
             const player = document.getElementById('player');
             const statusDiv = document.getElementById('status');
-            const results = document.getElementById('results');
 
-            results.classList.add('loading');
-            statusDiv.textContent = "Loading audio...";
+            if (player.src !== `${API}/play/${data.videoId}`) {
+                player.src = `${API}/play/${data.videoId}`;
+            }
 
-            player.src = `${API}/play/${data.videoId}`;
-            player.play().then(() => {
-                statusDiv.textContent = `Now playing: ${data.videoId}`;
-                results.classList.remove('loading');
-            }).catch(error => {
-                console.error('Play error:', error);
-                statusDiv.textContent = `Failed to play: ${error.message}`;
-                results.classList.remove('loading');
-            });
+            player.play()
+                .catch(error => {
+                    console.error('Remote play error:', error);
+                    statusDiv.textContent = 'Failed to play remote song';
+                });
         });
 
         socket.on('pause-song', () => {
