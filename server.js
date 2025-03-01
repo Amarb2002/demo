@@ -8,17 +8,17 @@ const ytdl = require('@distube/ytdl-core');
 
 const app = express();
 
-const allowedOrigins = [process.env.VERCEL_URL, 'http://localhost:3000'];
+const allowedOrigins = [
+    'https://demo-tau-woad.vercel.app',
+    'http://localhost:3000',
+    'https://demo-tau-woad.vercel.app/',
+    process.env.VERCEL_URL
+];
 
 app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    methods: ["GET", "POST"]
+    origin: '*',
+    methods: ['GET', 'POST'],
+    credentials: true
 }));
 
 app.set('views', path.join(__dirname, 'views')); // Add this line to set the views directory
@@ -30,11 +30,13 @@ app.use('/socket.io', express.static(path.join(__dirname, 'node_modules', 'socke
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: allowedOrigins,
-        methods: ["GET", "POST"],
+        origin: '*',
+        methods: ['GET', 'POST'],
         credentials: true
     },
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    path: '/socket.io',
+    addTrailingSlash: false
 });
 
 let rooms = {};
@@ -159,5 +161,4 @@ if (process.env.NODE_ENV !== 'production') {
     });
 }
 
-// module.exports = server;
-module.exports = app;
+module.exports = server;
