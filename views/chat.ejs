@@ -495,16 +495,24 @@
 
         const socket = io({
             path: '/socket.io',
-            transports: ['websocket', 'polling'],
+            transports: ['polling', 'websocket'], // Try polling first
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
+            timeout: 20000,
             autoConnect: true,
-            forceNew: true
+            forceNew: true,
+            upgrade: true,
+            rememberUpgrade: true
         });
 
-        // Add error handling
+        // Add more robust error handling
         socket.on('connect_error', (error) => {
             console.error('Connection error:', error);
+            // Attempt to reconnect using polling if websocket fails
+            if (socket.io.opts.transports.includes('websocket')) {
+                socket.io.opts.transports = ['polling'];
+                socket.connect();
+            }
         });
 
         socket.on('connect_timeout', () => {

@@ -30,13 +30,19 @@ app.use('/socket.io', express.static(path.join(__dirname, 'node_modules', 'socke
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: '*',
-        methods: ['GET', 'POST'],
-        credentials: true
+        origin: "*",
+        methods: ["GET", "POST"],
+        credentials: true,
+        allowedHeaders: ["*"]
     },
-    transports: ['websocket', 'polling'],
     path: '/socket.io',
-    addTrailingSlash: false
+    addTrailingSlash: false,
+    transports: ['polling', 'websocket'], // Try polling first, then upgrade to websocket
+    allowUpgrades: true,
+    upgrade: true,
+    maxHttpBufferSize: 1e8,
+    pingTimeout: 60000,
+    pingInterval: 25000
 });
 
 let rooms = {};
