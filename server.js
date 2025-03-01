@@ -80,42 +80,67 @@ app.get('/play/:videoId', async (req, res) => {
 
     try {
         const info = await ytdl.getInfo(url);
-        const audioFormat = ytdl.chooseFormat(info.formats, {
+        const format = ytdl.chooseFormat(info.formats, {
             quality: 'highestaudio',
-            filter: 'audioonly'
+            filter: format => format.hasAudio && !format.hasVideo
         });
 
-        if (!audioFormat) {
-            throw new Error('No audio format found');
+        if (!format) {
+            throw new Error('No suitable audio format found');
         }
 
+        // Set proper headers before starting stream
+        res.header('Content-Type', 'audio/mpeg');
+        res.header('Transfer-Encoding', 'chunked');
+        res.header('Accept-Ranges', 'bytes');
+        res.header('Cache-Control', 'no-cache');
+
         const stream = ytdl(url, {
-            format: audioFormat,
+            format: format,
             filter: 'audioonly',
-            highWaterMark: 1 << 25, // 32MB buffer
-            dlChunkSize: 0, // Disable chunk size limits
+            highWaterMark: 1024 * 1024, // 1MB buffer
+            liveBuffer: 20000, // 20s live buffer
+            dlChunkSize: 262144, // 256KB chunks
+            quality: 'highestaudio'
         });
 
-        // Set proper headers
-        res.setHeader('Content-Type', 'audio/mp4');
-        res.setHeader('Accept-Ranges', 'bytes');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Content-Disposition', 'inline');
+        let startTime = Date.now();
+        let dataReceived = false;
 
-        // Handle errors
-        stream.on('error', (error) => {
-            console.error('Stream error:', error);
-            if (!res.headersSent) {
-                res.status(500).json({ error: 'Streaming failed' });
+        stream.on('info', (info, format) => {
+            console.log('Stream info received:', format.container);
+        });
+
+        stream.on('data', (chunk) => {
+            if (!dataReceived) {
+                dataReceived = true;
+                console.log(`First chunk received after ${Date.now() - startTime}ms`);
             }
         });
 
-        // Pipe the stream
-        stream.pipe(res);
+        stream.on('error', (error) => {
+            console.error('Stream error:', error);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Streaming failed', details: error.message });
+            }
+        });
+
+        // Pipe with error handling
+        stream.pipe(res).on('error', (error) => {
+            console.error('Pipe error:', error);
+            if (!res.headersSent) {
+                res.status(500).end();
+            }
+        });
+
+        // Handle client disconnect
+        req.on('close', () => {
+            stream.destroy();
+        });
 
     } catch (error) {
-        console.error('Audio error:', error);
-        res.status(500).json({ error: 'Failed to stream audio', details: error.message });
+        console.error('Audio setup error:', error);
+        res.status(500).json({ error: 'Failed to setup audio stream', details: error.message });
     }
 });
 
