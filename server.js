@@ -10,13 +10,13 @@ const app = express();
 
 const allowedOrigins = [
     'https://demo-tau-woad.vercel.app',
-    'http://localhost:3000',
+   
     'https://demo-tau-woad.vercel.app/',
     process.env.VERCEL_URL
 ];
 
 app.use(cors({
-    origin: '*',
+    origin: 'https://demo-tau-woad.vercel.app',
     methods: ['GET', 'POST'],
     credentials: true
 }));
@@ -203,11 +203,6 @@ io.on('connection', (socket) => {
     });
 });
 
-if (process.env.NODE_ENV !== 'production') {
-    const PORT = process.env.PORT || 3000;
-    server.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
-}
+
 
 module.exports = server;
