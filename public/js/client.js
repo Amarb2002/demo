@@ -2,7 +2,10 @@ const socket = io({
     path: '/socket.io',
     transports: ['websocket', 'polling'],
     reconnectionAttempts: 5,
-    secure: true
+    secure: process.env.NODE_ENV === 'production',
+    auth: {
+        token: process.env.NODE_ENV === 'production' ? process.env.VERCEL_URL : null
+    }
 });
 
 socket.on('connect', () => {

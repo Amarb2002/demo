@@ -5,6 +5,7 @@ const http = require('http');
 const cors = require('cors');
 const yts = require('yt-search');
 const ytdl = require('@distube/ytdl-core');
+const redis = require('redis');
 
 const app = express();
 
@@ -30,15 +31,17 @@ app.use('/socket.io', express.static(path.join(__dirname, 'node_modules', 'socke
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "*",
-        methods: ["GET", "POST"],
-        credentials: true,
-        allowedHeaders: ["*"]
+        origin: process.env.NODE_ENV === 'production' ? [process.env.VERCEL_URL, 'https://demo-tau-woad.vercel.app'] : '*',
+        methods: ['GET', 'POST'],
+        credentials: true
     },
     path: '/socket.io',
-    addTrailingSlash: false,
-    transports: ['polling', 'websocket'], // Try polling first, then upgrade to websocket
+    transports: ['polling', 'websocket'],
     allowUpgrades: true,
+    adapter: require('@socket.io/redis-adapter'),
+    createAdapter: require("@socket.io/redis-adapter").createAdapter,
+    pubClient: redis.createClient({ url: process.env.REDIS_URL }),
+    subClient: redis.createClient({ url: process.env.REDIS_URL }),
     upgrade: true,
     maxHttpBufferSize: 1e8,
     pingTimeout: 60000,
