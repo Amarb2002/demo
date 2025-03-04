@@ -11,7 +11,7 @@ const app = express();
 
 const allowedOrigins = [
     'https://demo-tau-woad.vercel.app',
-   
+
     'https://demo-tau-woad.vercel.app/',
     process.env.VERCEL_URL
 ];
@@ -38,10 +38,10 @@ const io = new Server(server, {
     path: '/socket.io',
     transports: ['polling', 'websocket'],
     allowUpgrades: true,
-    adapter: require('@socket.io/redis-adapter'),
-    createAdapter: require("@socket.io/redis-adapter").createAdapter,
-    pubClient: redis.createClient({ url: process.env.REDIS_URL }),
-    subClient: redis.createClient({ url: process.env.REDIS_URL }),
+    adapter: require('@socket.io/redis-adapter').createAdapter(
+        redis.createClient({ url: process.env.REDIS_URL }),
+        redis.createClient({ url: process.env.REDIS_URL })
+    ),
     upgrade: true,
     maxHttpBufferSize: 1e8,
     pingTimeout: 60000,
