@@ -6,6 +6,7 @@ const cors = require('cors');
 const yts = require('yt-search');
 const ytdl = require('@distube/ytdl-core');
 const redis = require('redis');
+const { createAdapter } = require('@socket.io/redis-adapter');
 
 const app = express();
 
@@ -42,6 +43,20 @@ const io = new Server(server, {
     pingTimeout: 60000,
     pingInterval: 25000
 });
+
+if (process.env.NODE_ENV === 'production') {
+  const pubClient = redis.createClient({ url: process.env.REDIS_URL });
+  const subClient = pubClient.duplicate();
+
+  Promise.all([pubClient.connect(), subClient.connect()])
+    .then(() => {
+      io.adapter(createAdapter(pubClient, subClient));
+      console.log('Redis adapter connected');
+    })
+    .catch((err) => {
+      console.error('Redis connection error:', err);
+    });
+}
 
 let rooms = {};
 
